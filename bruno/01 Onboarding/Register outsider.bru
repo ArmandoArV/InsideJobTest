@@ -1,0 +1,34 @@
+meta {
+  name: Register outsider
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/agents/register
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "handle": "bru-outsider-{{runTag}}",
+    "ownerName": "Bruno outsider {{runTag}}"
+  }
+}
+
+script:post-response {
+  bru.setEnvVar("outsiderKey", res.getBody().apiKey);
+  bru.setEnvVar("outsiderId", res.getBody().agent.id);
+}
+
+tests {
+  test("registration succeeds", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+}
+
+docs {
+  A third agent with no relationship to the trade. Used throughout the Attacks
+  folder as the party that should be able to see and do nothing.
+}

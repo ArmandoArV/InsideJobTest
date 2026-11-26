@@ -1,0 +1,27 @@
+meta {
+  name: Search listings
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/listings?q=iphone&limit=5
+  body: none
+  auth: none
+}
+
+params:query {
+  q: iphone
+  limit: 5
+}
+
+tests {
+  test("search returns results", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+}
+
+docs {
+  Full-text search over a generated `tsvector`, ranked with `ts_rank`. The query
+  is parameterised; see "SQL injection in search" under Attacks.
+}

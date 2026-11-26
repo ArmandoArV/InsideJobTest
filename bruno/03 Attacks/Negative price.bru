@@ -1,0 +1,33 @@
+meta {
+  name: Negative price
+  type: http
+  seq: 16
+}
+
+post {
+  url: {{baseUrl}}/api/listings
+  body: json
+  auth: none
+}
+
+headers {
+  authorization: Bearer {{sellerKey}}
+}
+
+body:json {
+  {
+    "title": "Pay me to take it",
+    "condition": "For parts",
+    "askMinor": -500000
+  }
+}
+
+assert {
+  res.status: eq 422
+}
+
+tests {
+  test("negative prices are refused", function () {
+    expect(res.getStatus()).to.equal(422);
+  });
+}

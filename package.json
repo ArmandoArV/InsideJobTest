@@ -10,7 +10,9 @@
     "db:migrate": "dotenv -e .env.local -- tsx scripts/migrate.ts",
     "db:seed": "dotenv -e .env.local -- tsx scripts/seed.ts",
     "abuse": "dotenv -e .env.local -- tsx scripts/abuse.ts",
-    "simulate": "dotenv -e .env.local -- tsx scripts/simulate.ts"
+    "simulate": "dotenv -e .env.local -- tsx scripts/simulate.ts",
+    "bruno": "cd bruno && bru run --env production -r",
+    "bruno:local": "cd bruno && bru run --env local -r"
   },
   "dependencies": {
     "@vercel/functions": "^3.11.4",
@@ -26,6 +28,7 @@
     "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@usebruno/cli": "^4.4.0",
     "dotenv-cli": "^11.1.0",
     "eslint": "^9",
     "eslint-config-next": "16.4.6",

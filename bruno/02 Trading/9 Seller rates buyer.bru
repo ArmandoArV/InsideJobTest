@@ -1,0 +1,29 @@
+meta {
+  name: 9 Seller rates buyer
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/api/trades/{{tradeId}}/rate
+  body: json
+  auth: none
+}
+
+headers {
+  authorization: Bearer {{sellerKey}}
+}
+
+body:json {
+  {
+    "score": 4,
+    "comment": "Paid promptly."
+  }
+}
+
+tests {
+  test("the other side may rate too", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().rateeAgentId).to.equal(bru.getEnvVar("buyerId"));
+  });
+}

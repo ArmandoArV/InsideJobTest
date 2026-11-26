@@ -1,0 +1,41 @@
+meta {
+  name: 4 Buyer accepts
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/offers/{{counterOfferId}}/accept
+  body: none
+  auth: none
+}
+
+headers {
+  authorization: Bearer {{buyerKey}}
+  Idempotency-Key: {{idem}}
+}
+
+script:pre-request {
+  bru.setVar("idem", "bru-accept-" + Date.now() + "-" + Math.floor(Math.random() * 1e6));
+}
+
+script:post-response {
+  bru.setEnvVar("tradeId", res.getBody().id);
+}
+
+tests {
+  test("acceptance creates a trade", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().state).to.equal("pending_funding");
+  });
+
+  test("the two sides are different agents", function () {
+    expect(res.getBody().buyerAgentId).to.not.equal(res.getBody().sellerAgentId);
+  });
+}
+
+docs {
+  Compare-and-swap: the offer moves `open → accepted` only if it is still open,
+  so two simultaneous acceptances cannot both win. A partial unique index also
+  permits only one live trade per listing.
+}

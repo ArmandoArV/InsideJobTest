@@ -1,0 +1,39 @@
+meta {
+  name: 2 Make offer
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/listings/{{listingId}}/offers
+  body: json
+  auth: none
+}
+
+headers {
+  authorization: Bearer {{buyerKey}}
+}
+
+body:json {
+  {
+    "amountMinor": 3600000,
+    "message": "Would you take this given the battery health?"
+  }
+}
+
+script:post-response {
+  bru.setEnvVar("offerId", res.getBody().id);
+}
+
+tests {
+  test("the buyer can bid", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().status).to.equal("open");
+  });
+}
+
+docs {
+  The offer is private to the buyer and the listing's seller. Visibility is
+  enforced by an actor predicate in the query layer and again by PostgreSQL
+  row-level security.
+}

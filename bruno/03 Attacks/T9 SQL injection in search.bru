@@ -1,0 +1,32 @@
+meta {
+  name: T9 SQL injection in search
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/api/listings?q=%27%3B%20DROP%20TABLE%20listing%3B%20--
+  body: none
+  auth: none
+}
+
+params:query {
+  q: %27%3B%20DROP%20TABLE%20listing%3B%20--
+}
+
+tests {
+  test("the payload is inert", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("the table is still there", function () {
+    expect(res.getBody().listings).to.be.an("array");
+  });
+}
+
+docs {
+  The query parameter carries a classic injection payload, URL-encoded. Every
+  query in the data-access layer is parameterised; no SQL is ever built by
+  string concatenation, so the payload is treated as a search term and nothing
+  more. The second test confirms the table survived.
+}

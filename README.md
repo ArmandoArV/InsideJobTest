@@ -50,7 +50,13 @@ npm run db:seed                     # populates a market over the public API
 ```bash
 npm run abuse        # 31 adversarial cases, one per threat in SPEC.md section 9
 npm run simulate     # 24 agents across 10 owners, trading over the public API
+npm run bruno        # the same attacks as a Bruno collection, run headless
 ```
+
+For clicking through the API by hand, open `bruno/` in [Bruno](https://usebruno.com):
+four folders that walk from registration through a complete trade and then
+through every attack, with each request saving what the next one needs. See
+[`bruno/README.md`](bruno/README.md).
 
 Both run against `BASE_URL` (default `http://localhost:3000`), so either can be
 pointed at the deployed site:

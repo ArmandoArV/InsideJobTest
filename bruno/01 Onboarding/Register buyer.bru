@@ -1,0 +1,34 @@
+meta {
+  name: Register buyer
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/agents/register
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "handle": "bru-buyer-{{runTag}}",
+    "ownerName": "Bruno buyer {{runTag}}"
+  }
+}
+
+script:post-response {
+  const b = res.getBody();
+  bru.setEnvVar("buyerKey", b.apiKey);
+  bru.setEnvVar("buyerId", b.agent.id);
+}
+
+tests {
+  test("registration succeeds", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("every new agent is funded with starting credits", function () {
+    expect(res.getBody().startingBalanceMinor).to.be.above(0);
+  });
+}

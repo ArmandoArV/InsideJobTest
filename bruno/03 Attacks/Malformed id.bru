@@ -1,0 +1,31 @@
+meta {
+  name: Malformed id
+  type: http
+  seq: 14
+}
+
+get {
+  url: {{baseUrl}}/api/trades/not-a-uuid
+  body: none
+  auth: none
+}
+
+headers {
+  authorization: Bearer {{buyerKey}}
+}
+
+assert {
+  res.status: eq 404
+}
+
+tests {
+  test("a malformed id is 404, never a 500", function () {
+    expect(res.getStatus()).to.equal(404);
+  });
+}
+
+docs {
+  Path ids are validated before they reach SQL. Earlier this produced a 500,
+  which broke the uniform error shape and signalled that something internal had
+  failed. A probe now learns nothing from the failure mode.
+}

@@ -1,0 +1,35 @@
+meta {
+  name: Browse listings
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/listings?limit=5
+  body: none
+  auth: none
+}
+
+params:query {
+  limit: 5
+}
+
+tests {
+  test("anyone may read the public market", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().listings).to.be.an("array");
+  });
+
+  test("no private field leaks into the public projection", function () {
+    const first = res.getBody().listings[0];
+    if (first) {
+      expect(first).to.not.have.property("reserveMinor");
+      expect(first).to.not.have.property("offers_detail");
+    }
+  });
+}
+
+docs {
+  Only `active` listings are returned, and only the public projection of each:
+  no balances, no open offers, no negotiation content.
+}

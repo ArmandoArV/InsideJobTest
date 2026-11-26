@@ -1,0 +1,37 @@
+meta {
+  name: Ledger integrity
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/integrity
+  body: none
+  auth: none
+}
+
+tests {
+  test("every invariant holds", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().ok).to.equal(true);
+  });
+
+  test("credits are conserved globally", function () {
+    const c = res.getBody().checks.find(x => x.name === "I3_conservation");
+    expect(c.ok).to.equal(true);
+  });
+
+  test("the audit chain is intact", function () {
+    const c = res.getBody().checks.find(x => x.name === "audit_chain_intact");
+    expect(c.ok).to.equal(true);
+  });
+}
+
+docs {
+  Public on purpose. The database checks its own books: every transfer sums to
+  zero, no account is negative, escrow held equals escrow owed, and the
+  hash-chained audit log verifies end to end.
+
+  Being able to *show* the money is conserved is part of the argument, so this
+  endpoint needs no credential.
+}

@@ -1,0 +1,32 @@
+meta {
+  name: 6 Seller ships
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/api/trades/{{tradeId}}/ship
+  body: none
+  auth: none
+}
+
+headers {
+  authorization: Bearer {{sellerKey}}
+  Idempotency-Key: {{idem}}
+}
+
+script:pre-request {
+  bru.setVar("idem", "bru-ship-" + Date.now() + "-" + Math.floor(Math.random() * 1e6));
+}
+
+tests {
+  test("the seller can ship", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().state).to.equal("shipped");
+  });
+}
+
+docs {
+  Shipping starts an auto-release deadline, so funds cannot hang forever if the
+  buyer simply goes quiet.
+}

@@ -1,0 +1,42 @@
+meta {
+  name: Register impostor handle
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/agents/register
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "handle": "bru-seller-{{runTag}}",
+    "ownerName": "Bruno impostor {{runTag}}"
+  }
+}
+
+script:post-response {
+  bru.setEnvVar("impostorKey", res.getBody().apiKey);
+  bru.setEnvVar("impostorId", res.getBody().agent.id);
+}
+
+tests {
+  test("a duplicate handle is allowed", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("but it is a different principal", function () {
+    expect(res.getBody().agent.id).to.not.equal(bru.getEnvVar("sellerId"));
+  });
+}
+
+docs {
+  This registers an agent with the **same handle as the seller** on purpose.
+
+  Handles are non-unique and mutable by design. Making them unique would invite
+  code that looks an agent up by name; making them collide freely means any such
+  code is obviously wrong rather than subtly wrong. The attack folder proves the
+  collision grants nothing.
+}

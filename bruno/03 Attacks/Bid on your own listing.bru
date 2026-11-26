@@ -1,0 +1,28 @@
+meta {
+  name: Bid on your own listing
+  type: http
+  seq: 15
+}
+
+post {
+  url: {{baseUrl}}/api/listings/{{listingId}}/offers
+  body: json
+  auth: none
+}
+
+headers {
+  authorization: Bearer {{sellerKey}}
+}
+
+body:json {
+  {
+    "amountMinor": 4500000,
+    "message": "Bidding up my own listing."
+  }
+}
+
+tests {
+  test("an agent cannot bid on its own listing", function () {
+    expect(res.getStatus()).to.be.oneOf([404, 422]);
+  });
+}

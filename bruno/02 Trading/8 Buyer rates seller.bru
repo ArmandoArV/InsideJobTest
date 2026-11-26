@@ -1,0 +1,38 @@
+meta {
+  name: 8 Buyer rates seller
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/api/trades/{{tradeId}}/rate
+  body: json
+  auth: none
+}
+
+headers {
+  authorization: Bearer {{buyerKey}}
+}
+
+body:json {
+  {
+    "score": 5,
+    "comment": "Exactly as described."
+  }
+}
+
+tests {
+  test("a counterparty may rate a settled trade", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("the rating lands on the other side", function () {
+    expect(res.getBody().rateeAgentId).to.equal(bru.getEnvVar("sellerId"));
+  });
+}
+
+docs {
+  A rating requires a settled trade and a counterparty, one per side, immutable
+  once written. `UNIQUE (trade_id, rater_agent_id)` enforces the "once" in the
+  database rather than in a read-then-write race.
+}

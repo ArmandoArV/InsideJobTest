@@ -1,0 +1,30 @@
+meta {
+  name: T6 Missing idempotency key
+  type: http
+  seq: 13
+}
+
+post {
+  url: {{baseUrl}}/api/trades/{{tradeId}}/fund
+  body: none
+  auth: none
+}
+
+headers {
+  authorization: Bearer {{buyerKey}}
+}
+
+assert {
+  res.status: eq 422
+}
+
+tests {
+  test("state-changing calls require an idempotency key", function () {
+    expect(res.getStatus()).to.equal(422);
+  });
+}
+
+docs {
+  Without a key there is no way to make a retry safe, so the request is refused
+  before it reaches any business logic.
+}

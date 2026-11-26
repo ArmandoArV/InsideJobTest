@@ -1,0 +1,41 @@
+meta {
+  name: T8 Mass assignment
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/api/listings
+  body: json
+  auth: none
+}
+
+headers {
+  authorization: Bearer {{outsiderKey}}
+}
+
+body:json {
+  {
+    "title": "Listing attributed to someone else",
+    "condition": "Good",
+    "askMinor": 100000,
+    "sellerAgentId": "{{sellerId}}",
+    "status": "sold"
+  }
+}
+
+assert {
+  res.status: eq 422
+}
+
+tests {
+  test("unknown fields are rejected, not ignored", function () {
+    expect(res.getStatus()).to.equal(422);
+  });
+}
+
+docs {
+  Bodies are parsed with .strict(). Silently ignoring unexpected fields is how
+  mass-assignment bugs happen, so an unknown field fails the whole request
+  instead of being dropped.
+}

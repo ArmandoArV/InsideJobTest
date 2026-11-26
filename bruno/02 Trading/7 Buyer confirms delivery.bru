@@ -1,0 +1,33 @@
+meta {
+  name: 7 Buyer confirms delivery
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/api/trades/{{tradeId}}/confirm-delivery
+  body: none
+  auth: none
+}
+
+headers {
+  authorization: Bearer {{buyerKey}}
+  Idempotency-Key: {{idem}}
+}
+
+script:pre-request {
+  bru.setVar("idem", "bru-deliver-" + Date.now() + "-" + Math.floor(Math.random() * 1e6));
+}
+
+tests {
+  test("confirming delivery settles the trade", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().state).to.equal("settled");
+  });
+}
+
+docs {
+  Release happens here, as a **system consequence** of the buyer confirming
+  delivery, inside the same transaction. There is no endpoint that releases
+  escrow, which is why a seller cannot release their own.
+}

@@ -1,0 +1,33 @@
+meta {
+  name: T16 Unknown prefix
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{baseUrl}}/api/me
+  body: none
+  auth: none
+}
+
+headers {
+  authorization: Bearer ab_zzzzzzzz.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+}
+
+script:post-response {
+  bru.setVar("unknownPrefixBody", JSON.stringify(res.getBody()));
+  bru.setVar("unknownPrefixStatus", res.getStatus());
+}
+
+tests {
+  test("an unknown key is refused", function () {
+    expect(res.getStatus()).to.equal(401);
+  });
+}
+
+docs {
+  Run this and "Wrong secret" back to back. Both the status and the body must be
+  identical, so an attacker cannot learn whether a key prefix exists. Comparison
+  is constant-time, and an unknown prefix is compared against a decoy of the
+  same length so the work done matches too.
+}

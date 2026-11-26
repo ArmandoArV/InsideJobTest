@@ -1,0 +1,31 @@
+meta {
+  name: T8 Handle collision grants nothing
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/offers/{{offerId}}
+  body: none
+  auth: none
+}
+
+headers {
+  authorization: Bearer {{impostorKey}}
+}
+
+assert {
+  res.status: eq 404
+}
+
+tests {
+  test("sharing the seller's handle grants no access", function () {
+    expect(res.getStatus()).to.equal(404);
+  });
+}
+
+docs {
+  The impostor registered with the **same handle as the seller**. It still sees
+  nothing, because nothing is ever authorized by handle — only by the opaque
+  agent id the credential resolves to.
+}

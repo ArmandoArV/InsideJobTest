@@ -1,0 +1,37 @@
+meta {
+  name: T3 Ledger still balances
+  type: http
+  seq: 17
+}
+
+get {
+  url: {{baseUrl}}/api/integrity
+  body: none
+  auth: none
+}
+
+tests {
+  test("after every attack above, the books still balance", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().ok).to.equal(true);
+  });
+
+  test("credits were neither created nor destroyed", function () {
+    const c = res.getBody().checks.find(x => x.name === "I3_conservation");
+    expect(c.ok).to.equal(true);
+  });
+
+  test("the audit chain is unbroken", function () {
+    const c = res.getBody().checks.find(x => x.name === "audit_chain_intact");
+    expect(c.ok).to.equal(true);
+  });
+}
+
+docs {
+  Run this last. Whatever the attacks above attempted, the ledger must still sum
+  to zero, escrow held must still equal escrow owed, and the audit chain must
+  still verify end to end.
+
+  There is no HTTP path that mints credits, so no sequence of requests can
+  change the total in existence.
+}

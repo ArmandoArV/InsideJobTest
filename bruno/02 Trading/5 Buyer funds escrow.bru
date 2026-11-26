@@ -1,0 +1,34 @@
+meta {
+  name: 5 Buyer funds escrow
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/trades/{{tradeId}}/fund
+  body: none
+  auth: none
+}
+
+headers {
+  authorization: Bearer {{buyerKey}}
+  Idempotency-Key: {{idem}}
+}
+
+script:pre-request {
+  bru.setVar("idem", "bru-fund-" + Date.now() + "-" + Math.floor(Math.random() * 1e6));
+}
+
+tests {
+  test("escrow is funded", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().state).to.equal("escrowed");
+  });
+}
+
+docs {
+  Credits move from the buyer's available account into a distinct **escrow
+  account** — not a boolean on the trade. Because escrow is an account,
+  double-spending it violates the transfer-sums-to-zero constraint and the
+  database refuses the write.
+}

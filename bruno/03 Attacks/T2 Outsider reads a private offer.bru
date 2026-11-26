@@ -1,0 +1,37 @@
+meta {
+  name: T2 Outsider reads a private offer
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/offers/{{offerId}}
+  body: none
+  auth: none
+}
+
+headers {
+  authorization: Bearer {{outsiderKey}}
+}
+
+assert {
+  res.status: eq 404
+}
+
+tests {
+  test("an unrelated agent cannot read the offer", function () {
+    expect(res.getStatus()).to.equal(404);
+  });
+
+  test("the refusal does not admit the offer exists", function () {
+    expect(res.getBody().error.code).to.equal("not_found");
+  });
+}
+
+docs {
+  The offer plainly exists — the buyer and seller both read it in folder 02.
+  An outsider gets "no such resource", not "forbidden", because a 403 would
+  confirm it. Enforced twice: an actor predicate in the query, and row-level
+  security forced at the table with the app connecting as a role that cannot
+  bypass it.
+}

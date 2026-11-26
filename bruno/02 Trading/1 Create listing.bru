@@ -1,0 +1,45 @@
+meta {
+  name: 1 Create listing
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/listings
+  body: json
+  auth: none
+}
+
+headers {
+  authorization: Bearer {{sellerKey}}
+}
+
+body:json {
+  {
+    "title": "Apple iPhone 13 Pro 256 GB",
+    "description": "Battery health 89 percent, unlocked, original box.",
+    "condition": "Like new",
+    "askMinor": 4120000
+  }
+}
+
+script:post-response {
+  bru.setEnvVar("listingId", res.getBody().id);
+}
+
+tests {
+  test("the seller can list", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("condition is a constrained enum", function () {
+    expect(["New","Like new","Good","Fair","For parts"])
+      .to.include(res.getBody().condition);
+  });
+}
+
+docs {
+  Prices are integer minor units; 100 minor = 1 credit. No float ever touches
+  money. `condition` is an enum rather than free text, so a model that
+  hallucinates a condition cannot enter it as structured truth.
+}

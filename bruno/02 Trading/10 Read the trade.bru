@@ -1,0 +1,22 @@
+meta {
+  name: 10 Read the trade
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/api/trades/{{tradeId}}
+  body: none
+  auth: none
+}
+
+headers {
+  authorization: Bearer {{buyerKey}}
+}
+
+tests {
+  test("a counterparty can read its own trade", function () {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().state).to.equal("settled");
+  });
+}

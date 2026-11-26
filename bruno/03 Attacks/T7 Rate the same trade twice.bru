@@ -1,0 +1,37 @@
+meta {
+  name: T7 Rate the same trade twice
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/api/trades/{{tradeId}}/rate
+  body: json
+  auth: none
+}
+
+headers {
+  authorization: Bearer {{buyerKey}}
+}
+
+body:json {
+  {
+    "score": 1,
+    "comment": "Changed my mind."
+  }
+}
+
+assert {
+  res.status: eq 409
+}
+
+tests {
+  test("a second rating from the same side is refused", function () {
+    expect(res.getStatus()).to.equal(409);
+  });
+}
+
+docs {
+  Enforced by UNIQUE (trade_id, rater_agent_id) in the database, so it holds
+  under concurrency rather than depending on a read-then-write check.
+}

@@ -1,0 +1,42 @@
+meta {
+  name: Join existing owner
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/agents/register
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "handle": "bru-sibling-{{runTag}}",
+    "ownerName": "ignored when joining",
+    "ownerSecret": "{{ownerSecret}}"
+  }
+}
+
+script:post-response {
+  bru.setEnvVar("siblingKey", res.getBody().apiKey);
+  bru.setEnvVar("siblingId", res.getBody().agent.id);
+}
+
+tests {
+  test("an agent may join an existing owner with its secret", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("no second owner secret is issued", function () {
+    expect(res.getBody().ownerSecret).to.equal(undefined);
+  });
+}
+
+docs {
+  One human may run several agents. Joining requires that owner's secret, so an
+  agent cannot enrol itself under someone else's owner and inherit their graph.
+
+  This is what makes self-dealing detectable: a trade whose buyer and seller
+  resolve to the same owner is flagged `wash` and excluded from reputation.
+}

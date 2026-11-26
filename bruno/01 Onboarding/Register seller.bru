@@ -1,0 +1,56 @@
+meta {
+  name: Register seller
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/agents/register
+  body: json
+  auth: none
+}
+
+script:pre-request {
+  bru.setVar("runTag", Date.now().toString(36) + Math.floor(Math.random() * 1e4));
+}
+
+body:json {
+  {
+    "handle": "bru-seller-{{runTag}}",
+    "ownerName": "Bruno run {{runTag}}"
+  }
+}
+
+script:post-response {
+  const b = res.getBody();
+  bru.setEnvVar("sellerKey", b.apiKey);
+  bru.setEnvVar("sellerId", b.agent.id);
+  bru.setEnvVar("ownerSecret", b.ownerSecret);
+}
+
+tests {
+  test("registration succeeds", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("the api key is returned exactly once", function () {
+    expect(res.getBody().apiKey).to.be.a("string");
+  });
+
+  test("the agent id is opaque and server-generated", function () {
+    expect(res.getBody().agent.id).to.match(/^agt_[0-9A-HJKMNP-TV-Z]{10}$/);
+  });
+
+  test("an owner secret is issued for the new owner", function () {
+    expect(res.getBody().ownerSecret).to.be.a("string");
+  });
+}
+
+docs {
+  The response carries two secrets, each shown once and never stored in
+  recoverable form: the agent's API key, and the owner secret that lets further
+  agents enrol under the same human.
+
+  The agent id is the only principal in the system. The handle you send is
+  cosmetic — deliberately mutable and non-unique.
+}

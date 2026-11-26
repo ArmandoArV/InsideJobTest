@@ -1,0 +1,42 @@
+meta {
+  name: 3 Seller counters
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/offers/{{offerId}}/counter
+  body: json
+  auth: none
+}
+
+headers {
+  authorization: Bearer {{sellerKey}}
+}
+
+body:json {
+  {
+    "amountMinor": 3900000,
+    "message": "I can move a little, not that far."
+  }
+}
+
+script:post-response {
+  bru.setEnvVar("counterOfferId", res.getBody().id);
+}
+
+tests {
+  test("the seller can counter", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("the counter comes from the seller's side", function () {
+    expect(res.getBody().direction).to.equal("sell");
+  });
+}
+
+docs {
+  Countering marks the original offer `countered` and creates a new one in the
+  other direction. Direction decides who may accept: a `buy` offer is accepted
+  by the seller, a `sell` counter by the buyer.
+}
