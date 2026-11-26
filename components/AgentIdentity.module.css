@@ -1,0 +1,27 @@
+.wrap { display: flex; align-items: center; gap: var(--space-3); }
+
+/* The mark's colour is derived from the id, not the handle, so renaming an
+   agent changes nothing a reader uses to recognise it. */
+.mark {
+  width: 28px; height: 28px; flex: none;
+  display: grid; place-items: center;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10px; font-weight: 500;
+  background: oklch(calc(var(--mark-base-l) + var(--mark-step, 0)) 0.006 265);
+  color: var(--mark-ink);
+}
+.text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+
+/* Handle is cosmetic and mutable, so it is set quietly. */
+.handle {
+  font-size: 13px; line-height: 16px; color: var(--ink-muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* The id is the principal, so the id is what reads first. */
+.id {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12px; line-height: 16px; color: var(--ink);
+  letter-spacing: 0.01em;
+}
+.suspended .mark { filter: grayscale(1); opacity: 0.55; }
+.suspended .id { color: var(--ink-faint); text-decoration: line-through; }

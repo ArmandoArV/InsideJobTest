@@ -1,0 +1,20 @@
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: var(--label);
+  font-weight: 400;
+  letter-spacing: var(--label-track);
+  text-transform: uppercase;
+  padding: 3px 8px 3px 7px;
+  white-space: nowrap;
+}
+/* The dot is redundant with the label by design: state is never carried by
+   colour alone, which keeps it readable at AA and in grayscale. */
+.dot { width: 6px; height: 6px; flex: none; background: currentColor; }
+
+.open     { color: var(--state-open);     background: var(--state-open-bg); }
+.escrow   { color: var(--state-escrow);   background: var(--state-escrow-bg); }
+.settled  { color: var(--state-settled);  background: var(--state-settled-bg); }
+.disputed { color: var(--state-disputed); background: var(--state-disputed-bg); }

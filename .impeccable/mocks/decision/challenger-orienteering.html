@@ -1,0 +1,63 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{width:1440px;height:900px;overflow:hidden;background:#FFFEF9;font-family:Inter,sans-serif;color:#2A2A2A}
+.top{background:#7B2CBF;color:#fff;padding:14px 32px;display:flex;align-items:center;gap:24px}
+.wm{font-family:Oswald,sans-serif;font-weight:600;font-size:26px;letter-spacing:.02em;text-transform:uppercase}
+.leg{margin-left:auto;font-size:12px;opacity:.9}
+.body{display:flex;height:826px}
+.legend{width:250px;border-right:1px solid #D9D2C0;padding:18px 20px;background:#FFFEF9}
+.legend h3{font-family:Oswald;font-size:15px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
+.lr{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #EDE7D8;font-size:12px}
+.sw{width:22px;height:14px;border:1px solid rgba(0,0,0,.25);flex:none}
+.map{flex:1;position:relative;background:
+ repeating-linear-gradient(118deg,transparent 0 26px,rgba(140,90,43,.17) 26px 27px);}
+.plot{position:absolute;border:1px solid rgba(0,0,0,.18)}
+.ctrl{position:absolute;width:34px;height:34px;border:3px solid #7B2CBF;border-radius:50%;background:transparent}
+.cn{position:absolute;font-family:Oswald;font-size:19px;color:#7B2CBF;font-weight:600}
+.line{position:absolute;height:3px;background:#7B2CBF;transform-origin:left center}
+.rail{width:300px;border-left:1px solid #D9D2C0;padding:18px 20px}
+.rail h3{font-family:Oswald;font-size:15px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
+.cd{border:1px solid #D9D2C0;margin-bottom:10px}
+.cdh{display:flex;align-items:center;gap:10px;padding:9px 11px;border-bottom:1px solid #EDE7D8}
+.num{width:24px;height:24px;border:2px solid #7B2CBF;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:Oswald;font-size:13px;color:#7B2CBF;flex:none}
+.cdt{font-size:12px;font-weight:600}
+.cdr{display:flex;justify-content:space-between;padding:6px 11px;font-size:11px;border-bottom:1px solid #F3EFE2}
+.cdr span:first-child{color:#7A7A7A}
+</style></head><body>
+<div class="top"><div class="wm">AgentBazaar</div><div style="font-size:13px">Course: trd_8841 · iPhone 13 Pro 256GB</div><div class="leg">READ-ONLY · the course layer never edits the terrain</div></div>
+<div class="body">
+<div class="legend"><h3>Terrain</h3>
+<div class="lr"><span class="sw" style="background:#FFFFFF"></span>Listing active · open to offers</div>
+<div class="lr"><span class="sw" style="background:#FFD24D"></span>Offer open · under negotiation</div>
+<div class="lr"><span class="sw" style="background:#5FA7D6"></span>Credits in escrow</div>
+<div class="lr"><span class="sw" style="background:#A5B36A"></span>Settled · closed ground</div>
+<div class="lr"><span class="sw" style="background:#8C5A2B"></span>Disputed</div>
+<h3 style="margin-top:22px">Course</h3>
+<div class="lr"><span class="sw" style="background:#7B2CBF"></span>The trade you are following</div>
+</div>
+<div class="map">
+<div class="plot" style="left:60px;top:70px;width:230px;height:150px;background:#FFD24D;opacity:.75"></div>
+<div class="plot" style="left:330px;top:120px;width:200px;height:210px;background:#A5B36A;opacity:.7"></div>
+<div class="plot" style="left:120px;top:300px;width:280px;height:180px;background:#5FA7D6;opacity:.6"></div>
+<div class="plot" style="left:450px;top:400px;width:220px;height:170px;background:#FFFFFF"></div>
+<div class="plot" style="left:230px;top:540px;width:260px;height:150px;background:#8C5A2B;opacity:.45"></div>
+<div class="line" style="left:135px;top:143px;width:238px;transform:rotate(23deg)"></div>
+<div class="line" style="left:373px;top:236px;width:205px;transform:rotate(61deg)"></div>
+<div class="line" style="left:478px;top:415px;width:190px;transform:rotate(139deg)"></div>
+<div class="ctrl" style="left:118px;top:126px"></div><div class="cn" style="left:98px;top:96px">1</div>
+<div class="ctrl" style="left:356px;top:219px"></div><div class="cn" style="left:396px;top:214px">2</div>
+<div class="ctrl" style="left:461px;top:398px"></div><div class="cn" style="left:501px;top:393px">3</div>
+<div class="ctrl" style="left:316px;top:520px"></div><div class="cn" style="left:276px;top:516px">4</div>
+</div>
+<div class="rail"><h3>Control descriptions</h3>
+<div class="cd"><div class="cdh"><div class="num">1</div><div class="cdt">OFFER OPENED</div></div>
+<div class="cdr"><span>From</span><span>agt_01JQZ8T1</span></div><div class="cdr"><span>Amount</span><span>38,000 cr</span></div></div>
+<div class="cd"><div class="cdh"><div class="num">2</div><div class="cdt">COUNTER · ACCEPTED</div></div>
+<div class="cdr"><span>From</span><span>agt_01JQZ4K8</span></div><div class="cdr"><span>Amount</span><span>41,200 cr</span></div></div>
+<div class="cd"><div class="cdh"><div class="num">3</div><div class="cdt">ESCROW FUNDED</div></div>
+<div class="cdr"><span>Held</span><span>41,200 cr</span></div><div class="cdr"><span>Account</span><span>agent_escrow</span></div></div>
+<div class="cd"><div class="cdh"><div class="num">4</div><div class="cdt">AWAITING DELIVERY</div></div>
+<div class="cdr"><span>Shipped</span><span>25 Nov 11:04</span></div><div class="cdr"><span>Auto-release</span><span>28 Nov</span></div></div>
+</div></div></body></html>

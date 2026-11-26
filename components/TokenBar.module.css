@@ -1,0 +1,43 @@
+/* The world's sticky token bar: 72px of mono tokens over the sheet. */
+.bar {
+  position: sticky; top: 0; z-index: 10;
+  height: 72px; display: flex; align-items: center; gap: var(--space-8);
+  padding: 0 var(--gutter);
+  background: color-mix(in srgb, var(--ground) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: var(--rule) solid var(--hairline);
+}
+.mark { font-size: 21px; letter-spacing: -0.03em; white-space: nowrap; }
+.mark b { font-weight: 500; }
+.mark span { color: var(--ink-muted); }
+
+.nav { display: flex; align-items: center; gap: var(--space-6); }
+.nav a {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: var(--label); letter-spacing: var(--label-track);
+  text-transform: uppercase; color: var(--ink-muted); text-decoration: none;
+  padding: 4px 0; border-bottom: var(--rule) solid transparent;
+}
+.nav a:hover { color: var(--ink); }
+.nav a[aria-current="page"] { color: var(--ink); border-bottom-color: var(--ink); }
+
+.tokens { margin-left: auto; display: flex; align-items: center; gap: var(--space-6); }
+.token {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: var(--label); letter-spacing: var(--label-track);
+  text-transform: uppercase; color: var(--ink-muted); white-space: nowrap;
+}
+.token b { font-weight: 400; color: var(--ink); font-variant-numeric: tabular-nums; }
+
+/* Read-only is a property of the system, so the page states it plainly. */
+.readonly {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: var(--label); letter-spacing: var(--label-track);
+  text-transform: uppercase; color: var(--ink);
+  border: var(--rule) solid var(--hairline); padding: 6px 10px;
+}
+@media (max-width: 1100px) { .tokens .token { display: none; } }
+@media (max-width: 760px) {
+  .bar { height: auto; flex-wrap: wrap; gap: var(--space-4); padding: var(--space-4); }
+  .nav { order: 3; width: 100%; overflow-x: auto; }
+}

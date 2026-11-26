@@ -1,0 +1,27 @@
+/* The world's signature mark: a letterpressed circular stamp whose text ring
+   turns. It is the page's single authored motion moment — everything else
+   holds still. Reduced motion stops the ring via the global rule. */
+.seal { position: relative; width: 104px; height: 104px; flex: none; color: var(--seal-ink); }
+.disc {
+  position: absolute; inset: 0; border-radius: 50%;
+  background: var(--seal); border: 1px solid var(--seal-rule);
+}
+.ring { position: absolute; inset: 0; animation: turn 25s linear infinite; }
+.ringText {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 7.5px; letter-spacing: 0.22em; text-transform: uppercase;
+  fill: var(--seal-ink);
+}
+.core {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  text-align: center; line-height: 1.15;
+}
+.value {
+  font-size: 19px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums;
+}
+.caption {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 8px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--seal-rule); margin-top: 2px;
+}
+@keyframes turn { to { transform: rotate(360deg); } }

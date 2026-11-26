@@ -1,0 +1,177 @@
+/* ============================================================================
+   AgentBazaar — ground layer
+   World: uncoated near-white plate section. Ink is never pure black, the only
+   rules on the page are 1px hairlines, and saturated colour exists solely to
+   carry trade state. Nothing here is decorative.
+   ========================================================================== */
+
+:root {
+  /* grounds — the sheet drifts warm at one corner and cool at another */
+  --ground:        #F5F4F6;
+  --ground-warm:   #FAF6F5;
+  --ground-cool:   #EEF3EF;
+  --sheet:         #FFFFFF;
+
+  /* ink */
+  --ink:           #16181A;
+  --ink-muted:     #5C5F63;
+  --ink-faint:     #696C70;
+
+  /* the only rule weight in the system */
+  --hairline:      #C9C7C4;
+  --hairline-soft: #E2E0DD;
+
+  /* the seal — one accent, reserved for provenance marks */
+  --seal:          #DCDDF3;
+  --seal-ink:      #2F3486;
+  --seal-rule:     #4A4FB5;
+
+  /* trade state — each colour has exactly one job and no other use */
+  --state-open:          #1D4ED8;
+  --state-open-bg:       #E8EEFC;
+  --state-escrow:        #4A4FB5;
+  --state-escrow-bg:     #E9EAF7;
+  --state-settled:       #0F7A4A;
+  --state-settled-bg:    #E4F2EA;
+  --state-disputed:      #B3261E;
+  --state-disputed-bg:   #FBE9E7;
+
+  /* the trade currently being followed — reserved, never reused */
+  --following:     #7A2FD4;
+
+  --focus:         #1D4ED8;
+
+  /* agent mark: a per-agent lightness step is added to this base at runtime */
+  --mark-base-l:   0.30;
+  --mark-ink:      #FFFFFF;
+
+  /* a 12-column sheet with 40px gutters, per the world's grid law */
+  --gutter:        40px;
+  --rule:          1px;
+
+  --space-1: 4px;  --space-2: 8px;  --space-3: 12px; --space-4: 16px;
+  --space-5: 20px; --space-6: 24px; --space-8: 32px; --space-10: 40px;
+  --space-12: 48px; --space-16: 64px;
+
+  --label: 11px;
+  --label-track: 0.14em;
+  --body: 17px;
+  --body-leading: 24px;
+
+  color-scheme: light;
+}
+
+:root:not([data-theme="light"]) {
+  @media (prefers-color-scheme: dark) {
+    --ground:        #141518;
+    --ground-warm:   #17151A;
+    --ground-cool:   #121715;
+    --sheet:         #1A1C1F;
+    --ink:           #ECEBE9;
+    --ink-muted:     #A0A3A7;
+    --ink-faint:     #85888C;
+    --hairline:      #35373A;
+    --hairline-soft: #26282B;
+    --seal:          #23264A;
+    --seal-ink:      #C9CBF0;
+    --seal-rule:     #6A70D8;
+    --state-open:        #8FB0FF;
+    --state-open-bg:     #16203A;
+    --state-escrow:      #AEB2F2;
+    --state-escrow-bg:   #1D1F3A;
+    --state-settled:     #5FD69B;
+    --state-settled-bg:  #10281D;
+    --state-disputed:    #FF9A90;
+    --state-disputed-bg: #2E1512;
+    --following:         #B98DFF;
+    --focus:             #8FB0FF;
+    --mark-base-l:       0.64;
+    --mark-ink:          #16181A;
+    color-scheme: dark;
+  }
+}
+
+[data-theme="dark"] {
+  --ground:        #141518;
+  --ground-warm:   #17151A;
+  --ground-cool:   #121715;
+  --sheet:         #1A1C1F;
+  --ink:           #ECEBE9;
+  --ink-muted:     #A0A3A7;
+  --ink-faint:     #85888C;
+  --hairline:      #35373A;
+  --hairline-soft: #26282B;
+  --seal:          #23264A;
+  --seal-ink:      #C9CBF0;
+  --seal-rule:     #6A70D8;
+  --state-open:        #8FB0FF;
+  --state-open-bg:     #16203A;
+  --state-escrow:      #AEB2F2;
+  --state-escrow-bg:   #1D1F3A;
+  --state-settled:     #5FD69B;
+  --state-settled-bg:  #10281D;
+  --state-disputed:    #FF9A90;
+  --state-disputed-bg: #2E1512;
+  --following:         #B98DFF;
+  --focus:             #8FB0FF;
+  --mark-base-l:       0.64;
+  --mark-ink:          #16181A;
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body { margin: 0; padding: 0; }
+
+body {
+  background-color: var(--ground);
+  /* the sheet's drift: warm at one corner, cool at the other */
+  background-image:
+    radial-gradient(120% 90% at 0% 0%, var(--ground-warm) 0%, transparent 55%),
+    radial-gradient(110% 90% at 100% 100%, var(--ground-cool) 0%, transparent 60%);
+  background-attachment: fixed;
+  color: var(--ink);
+  font-family: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  font-size: var(--body);
+  line-height: var(--body-leading);
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Figures are read in columns, so they align in columns. */
+.tnum, table, output, time, data { font-variant-numeric: tabular-nums; }
+
+h1, h2, h3, h4 { font-weight: 400; letter-spacing: -0.02em; margin: 0; }
+
+a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+
+/* ---- browser surfaces carry the design too ---------------------------- */
+
+::selection { background: var(--seal); color: var(--seal-ink); }
+
+:root { caret-color: var(--seal-rule); accent-color: var(--seal-rule); }
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 1px;
+}
+
+* { scrollbar-width: thin; scrollbar-color: var(--hairline) transparent; }
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: var(--hairline);
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover { background-color: var(--ink-faint); background-clip: content-box; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
