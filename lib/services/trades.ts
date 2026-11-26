@@ -1,9 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { asAgent, asPlatform } from "../db";
 import { audit } from "../audit";
-import { ApiError } from "../errors";
+import { fail } from "../errors/AppError";
+import { metric } from "@vercel/functions";
 import { rateLimit, replayOrRecord } from "../guards";
-import { transitionFor, type Role, type TradeState } from "../trade-machine";
+import { transitionFor, TRANSITIONS, type Role, type TradeState } from "../trade-machine";
 import { shapeTrade } from "./offers";
 
 const AUTO_RELEASE_DAYS = 3;
@@ -12,7 +13,7 @@ const AUTO_RELEASE_DAYS = 3;
 function roleOf(trade: { buyer_agent_id: string; seller_agent_id: string }, actor: string): Role {
   if (trade.buyer_agent_id === actor) return "buyer";
   if (trade.seller_agent_id === actor) return "seller";
-  throw new ApiError("not_found");
+  fail("NOT_COUNTERPARTY");
 }
 
 /**
@@ -39,21 +40,27 @@ async function applyEvent(
       [tradeId],
     );
     const t = rows[0];
-    if (!t) throw new ApiError("not_found");
+    if (!t) fail("RESOURCE_UNKNOWN", tradeId);
 
     const role = roleOf(t, actor);
     const transition = transitionFor(t.state as TradeState, event, role);
     if (!transition) {
-      // Indistinguishable from "wrong state" on purpose: the refusal does not
-      // tell an attacker which half of the check failed.
-      throw new ApiError("conflict");
+      // The client sees one answer either way — the refusal never says which
+      // half of the check failed. Internally the two are very different: a
+      // transition that exists for a DIFFERENT role means someone tried to act
+      // out of role, which is the seller-releases-own-escrow signal and pages.
+      const existsForAnotherRole = TRANSITIONS.some(
+        (x) => x.from === t.state && x.event === event,
+      );
+      if (existsForAnotherRole) fail("ROLE_NOT_PERMITTED", `${role} fired ${event} from ${t.state}`);
+      fail("TRANSITION_FORBIDDEN", `${event} from ${t.state}`);
     }
 
     const moved = await c.query(
       `update trade set state = $2 where id = $1 and state = $3 returning *`,
       [tradeId, transition.to, transition.from],
     );
-    if (moved.rowCount === 0) throw new ApiError("conflict");
+    if (moved.rowCount === 0) fail("CAS_LOST", `${event} raced from ${transition.from}`);
 
     if (onApplied) await onApplied(c, moved.rows[0]);
 
@@ -78,7 +85,7 @@ export async function fundTrade(actor: string, tradeId: string, idemKey: string)
 
     const cap = await c.query(`select spend_cap_minor from agent where id = $1`, [buyer]);
     if (amount > Number(cap.rows[0].spend_cap_minor)) {
-      throw new ApiError("invalid", "Amount exceeds this agent's spend cap.");
+      fail("SPEND_CAP_EXCEEDED", `${amount} > ${cap.rows[0].spend_cap_minor}`);
     }
 
     await c.query(`select ensure_agent_accounts($1)`, [buyer]);
@@ -88,6 +95,9 @@ export async function fundTrade(actor: string, tradeId: string, idemKey: string)
       [randomUUID(), buyer, amount, trade.id],
     );
     await c.query(`update trade set funded_at = now() where id = $1`, [trade.id]);
+    // Amount is the measurement here, not an increment: query it with p95/avg.
+    metric("escrow.funded_minor", amount);
+    metric("escrow.funded", 1, { outcome: "success" });
   });
   return shapeTrade(t);
 }
@@ -118,6 +128,7 @@ export async function confirmDelivery(actor: string, tradeId: string, idemKey: s
 
 export async function disputeTrade(actor: string, tradeId: string, reason: string, idemKey: string) {
   const t = await applyEvent(actor, tradeId, "dispute", idemKey, async (c, trade) => {
+    metric("trades.disputed", 1);
     await audit(c, {
       actor, action: "trade.dispute.reason", target: trade.id as string,
       payload: { reason: reason.slice(0, 500) },
@@ -142,13 +153,15 @@ async function releaseEscrow(c: import("pg").PoolClient, trade: Record<string, u
     `update trade set state = 'settled', settled_at = now() where id = $1`,
     [trade.id],
   );
+  metric("trades.settled", 1, { wash: trade.wash ? "yes" : "no" });
+  metric("escrow.released_minor", amount);
   await c.query(`update listing set status = 'sold' where id = $1`, [trade.listing_id]);
 }
 
 export async function getTrade(actor: string, tradeId: string) {
   return asAgent(actor, async (c) => {
     const { rows } = await c.query(`select * from trade where id = $1`, [tradeId]);
-    if (!rows[0]) throw new ApiError("not_found");
+    if (!rows[0]) fail("NOT_COUNTERPARTY", tradeId);
     return shapeTrade(rows[0]);
   });
 }
@@ -172,10 +185,10 @@ export async function rateTrade(
     await rateLimit(c, actor, "write");
     const { rows } = await c.query(`select * from trade where id = $1 for update`, [tradeId]);
     const t = rows[0];
-    if (!t) throw new ApiError("not_found");
+    if (!t) fail("RESOURCE_UNKNOWN", tradeId);
 
     const role = roleOf(t, actor);
-    if (t.state !== "settled") throw new ApiError("conflict");
+    if (t.state !== "settled") fail("TRADE_NOT_SETTLED", t.state);
 
     const ratee = role === "buyer" ? t.seller_agent_id : t.buyer_agent_id;
     try {
@@ -185,6 +198,7 @@ export async function rateTrade(
          returning id, trade_id, rater_agent_id, ratee_agent_id, score, comment, created_at`,
         [tradeId, actor, ratee, input.score, input.comment],
       );
+      metric("ratings.created", 1, { score: String(input.score) });
       await audit(c, {
         actor, action: "trade.rate", target: tradeId,
         payload: { ratee, score: input.score },
@@ -198,8 +212,8 @@ export async function rateTrade(
       };
     } catch (err) {
       // unique (trade_id, rater_agent_id) — one rating per side, enforced by
-      // the database rather than by a read-then-write race in code.
-      if ((err as { code?: string }).code === "23505") throw new ApiError("conflict");
+      // the database rather than by a read-then-write race in code. The
+      // classifier maps 23505 to ALREADY_RATED, so it needs no handling here.
       throw err;
     }
   });

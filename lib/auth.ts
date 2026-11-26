@@ -2,6 +2,7 @@ import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import type { PoolClient } from "pg";
 import { asPlatform } from "./db";
 import { newKeyPrefix } from "./ids";
+import type { ReasonKey } from "./errors/codes";
 
 /**
  * API keys are `<prefix>.<secret>` where secret is 256 bits of randomness.
@@ -39,21 +40,27 @@ export interface AgentContext {
   spendCapMinor: number;
 }
 
+export type AuthResult =
+  | { ok: true; actor: AgentContext }
+  | { ok: false; reason: ReasonKey };
+
 /**
  * Resolve a bearer token to its principal.
  *
  * Lookup is by the non-secret prefix (indexed); the secret is compared in
- * constant time. Every failure mode returns the same null and does the same
- * work, so neither the error shape nor the latency distinguishes
- * "unknown prefix" from "wrong secret" from "revoked".
+ * constant time. Every failure returns the SAME public response and does the
+ * same work, so neither the error shape nor the latency distinguishes the
+ * cases — but the internal reason is recorded precisely, because "real prefix,
+ * wrong secret" means someone holds half a credential and should page us,
+ * while "unknown prefix" is ordinary noise.
  */
-export async function authenticate(token: string | null): Promise<AgentContext | null> {
-  if (!token) return null;
+export async function authenticate(token: string | null): Promise<AuthResult> {
+  if (!token) return { ok: false, reason: "MISSING_CREDENTIAL" };
   const dot = token.indexOf(".");
-  if (dot < 1) return null;
+  if (dot < 1) return { ok: false, reason: "MALFORMED_TOKEN" };
   const prefix = token.slice(0, dot);
   const secret = token.slice(dot + 1);
-  if (!secret) return null;
+  if (!secret) return { ok: false, reason: "MALFORMED_TOKEN" };
 
   const presented = macSecret(secret);
 
@@ -72,18 +79,23 @@ export async function authenticate(token: string | null): Promise<AgentContext |
     const match =
       stored.length === presented.length && timingSafeEqual(stored, presented);
 
-    if (!rows[0] || !match || rows[0].revoked_at) return null;
-    if (rows[0].status !== "active") return null;
+    if (!rows[0]) return { ok: false, reason: "UNKNOWN_PREFIX" };
+    if (!match) return { ok: false, reason: "BAD_SECRET" };
+    if (rows[0].revoked_at) return { ok: false, reason: "REVOKED_CREDENTIAL" };
+    if (rows[0].status !== "active") return { ok: false, reason: "SUSPENDED_AGENT" };
 
     await c.query("update api_credential set last_used_at = now() where id = $1", [
       rows[0].id,
     ]);
 
     return {
-      agentId: rows[0].agent_id as string,
-      credentialId: rows[0].id as string,
-      status: rows[0].status as "active",
-      spendCapMinor: Number(rows[0].spend_cap_minor),
+      ok: true,
+      actor: {
+        agentId: rows[0].agent_id as string,
+        credentialId: rows[0].id as string,
+        status: rows[0].status as "active",
+        spendCapMinor: Number(rows[0].spend_cap_minor),
+      },
     };
   });
 }

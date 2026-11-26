@@ -9,7 +9,7 @@ const Schema = z.object({
 }).strict();
 
 export async function POST(req: Request) {
-  return open(async () => {
+  return open(req, async () => {
     const input = await body(req, Schema);
     return registerAgent(input);
   });

@@ -99,10 +99,13 @@ async function main() {
     token: `${buyer.token.split(".")[0]}.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA`,
   });
   check("T16", "no credential is 401", noAuth.status === 401);
+  // requestId is a random per-request handle and is expected to differ; it
+  // carries no information about why the call failed. Everything else must match.
+  const stripId = (b: any) => JSON.stringify({ ...b?.error, requestId: undefined });
   check("T16", "unknown prefix and wrong secret are indistinguishable",
         badPrefix.status === badSecret.status &&
-        JSON.stringify(badPrefix.body) === JSON.stringify(badSecret.body),
-        `${badPrefix.status} vs ${badSecret.status}`);
+        stripId(badPrefix.body) === stripId(badSecret.body),
+        `${badPrefix.status}/${stripId(badPrefix.body)} vs ${badSecret.status}/${stripId(badSecret.body)}`);
 
   // ---------------------------------------------------------------- T5 ----
   const accepted = await call(`/api/offers/${offerId}/accept`, {

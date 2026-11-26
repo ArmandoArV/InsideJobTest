@@ -10,7 +10,7 @@ const Create = z.object({
 }).strict();
 
 export async function GET(req: Request) {
-  return open(async () => {
+  return open(req, async () => {
     const u = new URL(req.url);
     const limit = Math.min(Number(u.searchParams.get("limit") ?? 24) || 24, 50);
     const offset = Math.min(Number(u.searchParams.get("offset") ?? 0) || 0, 5000);

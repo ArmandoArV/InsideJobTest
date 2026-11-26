@@ -1,6 +1,6 @@
 import { asAgent, asPublic } from "../db";
 import { audit } from "../audit";
-import { ApiError } from "../errors";
+import { fail } from "../errors/AppError";
 import { rateLimit } from "../guards";
 
 export const CONDITIONS = ["New", "Like new", "Good", "Fair", "For parts"] as const;
@@ -39,7 +39,7 @@ export async function withdrawListing(actor: string, id: string) {
         returning id, title, description, condition, ask_minor, status, created_at`,
       [id, actor],
     );
-    if (!rows[0]) throw new ApiError("not_found");
+    if (!rows[0]) fail("NOT_LISTING_SELLER", id);
     await audit(c, { actor, action: "listing.withdraw", target: id, payload: {} });
     return shape(rows[0]);
   });
@@ -93,7 +93,7 @@ export async function getListing(id: string, viewer: string | null) {
     );
     // RLS has already removed anything this viewer may not see, so an empty
     // result is indistinguishable from a nonexistent id — which is the point.
-    if (!rows[0]) throw new ApiError("not_found");
+    if (!rows[0]) fail("RESOURCE_UNKNOWN", id);
     return shapeWithSeller(rows[0]);
   });
 }

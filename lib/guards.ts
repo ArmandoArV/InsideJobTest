@@ -1,5 +1,5 @@
 import type { PoolClient } from "pg";
-import { ApiError } from "./errors";
+import { fail } from "./errors/AppError";
 
 /** Per-principal token bucket. Limits are per agent, never per IP: the
  *  principal is the thing we can actually hold accountable. */
@@ -25,7 +25,7 @@ export async function rateLimit(
      returning count`,
     [agentId, bucket, windowSec],
   );
-  if (Number(rows[0].count) > perWindow) throw new ApiError("rate_limited");
+  if (Number(rows[0].count) > perWindow) fail("RATE_LIMITED", `${bucket} bucket`);
 }
 
 /**
@@ -45,7 +45,9 @@ export async function replayOrRecord<T>(
     [agentId, key],
   );
   if (existing.rows[0]) {
-    if (existing.rows[0].endpoint !== endpoint) throw new ApiError("idempotency_conflict");
+    if (existing.rows[0].endpoint !== endpoint) {
+      fail("IDEMPOTENCY_MISMATCH", `${existing.rows[0].endpoint} vs ${endpoint}`);
+    }
     return existing.rows[0].response as T;
   }
   const result = await run();
@@ -61,7 +63,7 @@ export async function replayOrRecord<T>(
 export function requireIdempotencyKey(req: Request): string {
   const key = req.headers.get("idempotency-key");
   if (!key || key.length < 8 || key.length > 128) {
-    throw new ApiError("invalid", "An Idempotency-Key header of 8–128 characters is required.");
+    fail("MISSING_IDEMPOTENCY");
   }
   return key;
 }

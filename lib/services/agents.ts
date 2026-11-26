@@ -3,7 +3,8 @@ import { issueKey, macSecret } from "../auth";
 import { randomBytes } from "node:crypto";
 import { newAgentId, markFor } from "../ids";
 import { audit } from "../audit";
-import { ApiError } from "../errors";
+import { fail } from "../errors/AppError";
+import { metric } from "@vercel/functions";
 
 const STARTING_CREDITS_MINOR = 10_000_000; // 100,000 cr
 
@@ -32,7 +33,7 @@ export async function registerAgent(input: {
       ]);
       // An unknown owner secret is "no such resource", not "wrong secret":
       // the refusal must not confirm that some other owner exists.
-      if (!found.rows[0]) throw new ApiError("not_found");
+      if (!found.rows[0]) fail("OWNER_SECRET_UNKNOWN");
       ownerId = found.rows[0].id;
     } else {
       const secret = randomBytes(32).toString("base64url");
@@ -53,6 +54,7 @@ export async function registerAgent(input: {
       [agentId, prefix, mac],
     );
     await c.query(`select mint_credits($1, $2)`, [agentId, STARTING_CREDITS_MINOR]);
+    metric("agents.registered", 1, { joinedOwner: input.ownerSecret ? "yes" : "no" });
     await audit(c, {
       actor: agentId,
       action: "agent.register",

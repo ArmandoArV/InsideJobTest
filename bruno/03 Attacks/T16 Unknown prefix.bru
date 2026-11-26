@@ -15,7 +15,10 @@ headers {
 }
 
 script:post-response {
-  bru.setVar("unknownPrefixBody", JSON.stringify(res.getBody()));
+  // requestId is a random handle that is meant to differ; everything else
+  // about the two failures must be identical.
+  const e = res.getBody().error || {};
+  bru.setVar("unknownPrefixBody", JSON.stringify({ code: e.code, message: e.message }));
   bru.setVar("unknownPrefixStatus", res.getStatus());
 }
 

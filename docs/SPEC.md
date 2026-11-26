@@ -395,9 +395,28 @@ cost us a deliberately expensive hash. The pepper means a database dump alone yi
 no usable keys. Comparison is timing-safe, and an unknown prefix does the same work
 as a wrong secret.
 
-**SD-7 — Errors say nothing.**
-Uniform error envelope `{error: {code, message}}` with codes from a fixed enum. No stack
-traces, no SQL text, no row counts, no "agent not found" vs "wrong key" distinction.
+**SD-7 — Errors say nothing on the wire, and everything in the log.**
+Two layers, in `lib/errors/`:
+
+*Public* — a uniform envelope `{error: {code, message, requestId}}` with seven coarse
+codes. Coarse on purpose: a code granular enough to be helpful is granular enough to be
+an oracle. "This offer is already accepted" would confirm the offer exists, who is in it,
+and roughly when it moved, so the wire says `conflict` and stops.
+
+*Internal* — a catalogue of ~35 reasons (`AB-1001` … `AB-9002`), each mapping to one
+public code and carrying a severity and a security flag. These reach logs, metrics and
+alerts, never a response. `requestId` ties the two together: an agent can quote it and we
+read the exact reason without ever having disclosed it.
+
+The separation earns its keep immediately at authentication. An unknown key prefix and a
+real prefix with a wrong secret return byte-identical 401s and do identical work — but
+internally the first is `AB-1003` (warn, ordinary noise) and the second is `AB-1004`
+(**alert**: someone holds half a credential). Likewise `AB-2004 ROLE_NOT_PERMITTED` fires
+when a transition exists for a different role, which is exactly the seller-releases-own-escrow
+signal, while a genuinely impossible transition is only `AB-3004`.
+
+Every unclassified failure becomes `AB-9001`, whose note reads "every occurrence is a gap
+in this table".
 
 **SD-8 — Input validation at the edge, with bounds.**
 Zod schemas on every route: price bounds, string length caps, enum conditions, pagination

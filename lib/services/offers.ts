@@ -1,6 +1,7 @@
 import { asAgent, asPlatform } from "../db";
 import { audit } from "../audit";
-import { ApiError } from "../errors";
+import { fail } from "../errors/AppError";
+import { metric } from "@vercel/functions";
 import { rateLimit, replayOrRecord } from "../guards";
 
 const OFFER_TTL_HOURS = 24;
@@ -23,19 +24,20 @@ export async function makeOffer(
       `select id, seller_agent_id, status from listing where id = $1`,
       [listingId],
     );
-    if (!listing.rows[0] || listing.rows[0].status !== "active") {
-      throw new ApiError("not_found");
-    }
-    if (listing.rows[0].seller_agent_id === actor) {
-      throw new ApiError("invalid", "An agent cannot bid on its own listing.");
-    }
+    // Order matters. A missing row is 404 whoever asks; RLS already hides a
+    // non-active listing from anyone but its seller, so by the time state is
+    // checked the only actor who can see it is the seller — who is refused for
+    // self-dealing first, on the merits rather than on the listing's state.
+    if (!listing.rows[0]) fail("RESOURCE_UNKNOWN", listingId);
+    if (listing.rows[0].seller_agent_id === actor) fail("SELF_DEALING_BID", listingId);
+    if (listing.rows[0].status !== "active") fail("LISTING_UNAVAILABLE", listingId);
 
     const rounds = await c.query(
       `select count(*)::int as n from offer where listing_id = $1 and buyer_agent_id = $2`,
       [listingId, actor],
     );
     if (rounds.rows[0].n >= MAX_ROUNDS) {
-      throw new ApiError("invalid", "Negotiation round limit reached for this listing.");
+      fail("NEGOTIATION_DEPTH", `${rounds.rows[0].n} rounds`);
     }
 
     const { rows } = await c.query(
@@ -44,6 +46,7 @@ export async function makeOffer(
        returning id, listing_id, buyer_agent_id, direction, amount_minor, message, status, expires_at, created_at`,
       [listingId, actor, input.amountMinor, input.message, OFFER_TTL_HOURS],
     );
+    metric("offers.created", 1, { kind: "bid" });
     await audit(c, {
       actor, action: "offer.create", target: rows[0].id,
       payload: { listingId, amountMinor: input.amountMinor },
@@ -68,15 +71,15 @@ export async function counterOffer(
       [offerId],
     );
     const o = found[0];
-    if (!o) throw new ApiError("not_found");
-    if (o.seller_agent_id !== actor) throw new ApiError("not_found");
-    if (o.status !== "open") throw new ApiError("conflict");
+    if (!o) fail("RESOURCE_UNKNOWN", offerId);
+    if (o.seller_agent_id !== actor) fail("NOT_LISTING_SELLER", offerId);
+    if (o.status !== "open") fail("OFFER_NOT_OPEN", o.status);
 
     const moved = await c.query(
       `update offer set status = 'countered' where id = $1 and status = 'open'`,
       [offerId],
     );
-    if (moved.rowCount === 0) throw new ApiError("conflict");
+    if (moved.rowCount === 0) fail("CAS_LOST", "offer status moved during counter");
 
     const { rows } = await c.query(
       `insert into offer(listing_id, buyer_agent_id, parent_offer_id, direction,
@@ -85,6 +88,7 @@ export async function counterOffer(
        returning id, listing_id, buyer_agent_id, direction, amount_minor, message, status, expires_at, created_at`,
       [o.listing_id, o.buyer_agent_id, offerId, input.amountMinor, input.message, OFFER_TTL_HOURS],
     );
+    metric("offers.created", 1, { kind: "counter" });
     await audit(c, {
       actor, action: "offer.counter", target: rows[0].id,
       payload: { parent: offerId, amountMinor: input.amountMinor },
@@ -121,21 +125,21 @@ export async function acceptOffer(actor: string, offerId: string, idemKey: strin
       [offerId],
     );
     const o = found[0];
-    if (!o) throw new ApiError("not_found");
+    if (!o) fail("RESOURCE_UNKNOWN", offerId);
 
     const acceptor = o.direction === "buy" ? o.seller_agent_id : o.buyer_agent_id;
-    if (acceptor !== actor) throw new ApiError("not_found");
+    if (acceptor !== actor) fail("NOT_OFFER_PARTY", `direction ${o.direction}`);
 
-    if (o.status !== "open") throw new ApiError("conflict");
-    if (new Date(o.expires_at) <= new Date()) throw new ApiError("conflict");
-    if (o.listing_status !== "active") throw new ApiError("conflict");
+    if (o.status !== "open") fail("OFFER_NOT_OPEN", o.status);
+    if (new Date(o.expires_at) <= new Date()) fail("OFFER_EXPIRED");
+    if (o.listing_status !== "active") fail("LISTING_NOT_ACTIVE", o.listing_status);
 
     // Compare-and-swap: if two acceptances race, exactly one affects a row.
     const claimed = await c.query(
       `update offer set status = 'accepted' where id = $1 and status = 'open'`,
       [offerId],
     );
-    if (claimed.rowCount === 0) throw new ApiError("conflict");
+    if (claimed.rowCount === 0) fail("CAS_LOST", "offer accepted concurrently");
 
     await c.query(`update listing set status = 'reserved' where id = $1`, [o.listing_id]);
 
@@ -151,6 +155,7 @@ export async function acceptOffer(actor: string, offerId: string, idemKey: strin
                  state, wash, created_at, funding_deadline`,
       [o.listing_id, o.buyer_agent_id, o.seller_agent_id, offerId, o.amount_minor, wash],
     );
+    metric("trades.accepted", 1, { wash: wash ? "yes" : "no" });
     await audit(c, {
       actor, action: "offer.accept", target: rows[0].id,
       payload: { offerId, amountMinor: Number(o.amount_minor), wash },
@@ -178,7 +183,7 @@ export async function getOffer(actor: string, offerId: string) {
               status, expires_at, created_at from offer where id = $1`,
       [offerId],
     );
-    if (!rows[0]) throw new ApiError("not_found");
+    if (!rows[0]) fail("NOT_OFFER_PARTY", offerId);
     return shape(rows[0]);
   });
 }
