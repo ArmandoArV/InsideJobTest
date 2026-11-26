@@ -25,6 +25,11 @@ export async function open(fn: () => Promise<unknown>): Promise<Response> {
 }
 
 export function toResponse(err: unknown): Response {
+  // Next signals control flow (dynamic bailout, redirect, notFound) by
+  // throwing errors that carry a digest. Those are the framework's, not the
+  // application's: swallowing one breaks dynamic detection and can cache a
+  // 500 in place of a real response.
+  if (typeof (err as { digest?: unknown })?.digest === "string") throw err;
   if (err instanceof ApiError) return fail(err.code, err.detail);
   if (err instanceof z.ZodError) {
     return fail("invalid", err.issues.map((i) => i.path.join(".")).join(", "));
