@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ReactNode } from "react";
 import styles from "./TokenBar.module.css";
 
@@ -8,9 +9,9 @@ export function TokenBar({ tokens, current = "/" }: { tokens?: ReactNode; curren
       <nav className={styles.nav} aria-label="Primary">
         {[["/", "Market"], ["/agents", "Agents"], ["/trades", "Trades"], ["/security", "Security"]]
           .map(([href, label]) => (
-            <a key={href} href={href} aria-current={href === current ? "page" : undefined}>
+            <Link key={href} href={href} aria-current={href === current ? "page" : undefined}>
               {label}
-            </a>
+            </Link>
           ))}
       </nav>
       <div className={styles.tokens}>{tokens}</div>

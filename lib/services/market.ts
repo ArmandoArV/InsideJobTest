@@ -125,3 +125,95 @@ export async function marketPlates(limit = 8) {
     });
   });
 }
+
+/**
+ * The agent directory: a ranked, finite roster where every agent carries the
+ * same furniture. Reputation always ships with n and settled volume beside the
+ * mean, because a 5.0 from one trade must not read like a 5.0 from two hundred.
+ * Wash trades are excluded from the aggregate and counted separately.
+ */
+export async function agentDirectory(limit = 40) {
+  return asPlatform(async (c) => {
+    const { rows } = await c.query(
+      `select a.id, a.handle, a.mark, a.status,
+              coalesce(rep.n, 0)::int            as rating_count,
+              rep.mean                            as rating_mean,
+              coalesce(vol.settled, 0)::int       as settled_trades,
+              coalesce(vol.volume, 0)::bigint     as settled_volume,
+              coalesce(wash.n, 0)::int            as wash_excluded
+         from agent a
+         left join lateral (
+           select count(*) n, round(avg(r.score)::numeric, 2) mean
+             from rating r
+             join trade t on t.id = r.trade_id
+            where r.ratee_agent_id = a.id and not t.wash) rep on true
+         left join lateral (
+           select count(*) settled, sum(t.amount_minor) volume
+             from trade t
+            where t.state = 'settled' and not t.wash
+              and (t.buyer_agent_id = a.id or t.seller_agent_id = a.id)) vol on true
+         left join lateral (
+           select count(*) n from trade t
+            where t.wash and (t.buyer_agent_id = a.id or t.seller_agent_id = a.id)) wash on true
+        order by coalesce(vol.volume, 0) desc, a.id
+        limit $1`,
+      [Math.min(limit, 100)],
+    );
+    return rows.map((r) => ({
+      id: r.id as string,
+      handle: r.handle as string,
+      mark: r.mark as string,
+      suspended: r.status !== "active",
+      ratingCount: Number(r.rating_count),
+      ratingMean: r.rating_mean === null ? null : Number(r.rating_mean),
+      settledTrades: Number(r.settled_trades),
+      settledVolumeMinor: Number(r.settled_volume),
+      washExcluded: Number(r.wash_excluded),
+    }));
+  });
+}
+
+/**
+ * Closed trades only. In-flight trades are never listed here: a live
+ * negotiation is private to its two counterparties, and a public feed of
+ * "currently escrowed, awaiting delivery" would hand an observer exactly the
+ * timing information the privacy rule exists to withhold.
+ */
+export async function closedTrades(limit = 30) {
+  return asPlatform(async (c) => {
+    const { rows } = await c.query(
+      `select t.id, t.amount_minor, t.state, t.wash,
+              t.created_at, t.funded_at, t.shipped_at, t.delivered_at, t.settled_at,
+              l.title, l.condition,
+              b.id as buyer_id, b.handle as buyer_handle, b.mark as buyer_mark,
+              s.id as seller_id, s.handle as seller_handle, s.mark as seller_mark,
+              (select count(*) from offer o where o.listing_id = l.id)::int as rounds
+         from trade t
+         join listing l on l.id = t.listing_id
+         join agent b on b.id = t.buyer_agent_id
+         join agent s on s.id = t.seller_agent_id
+        where t.state in ('settled','disputed')
+        order by coalesce(t.settled_at, t.created_at) desc
+        limit $1`,
+      [Math.min(limit, 60)],
+    );
+    return rows.map((r) => ({
+      id: r.id as string,
+      title: r.title as string,
+      condition: r.condition as string,
+      amountMinor: Number(r.amount_minor),
+      state: r.state as "settled" | "disputed",
+      wash: Boolean(r.wash),
+      rounds: Number(r.rounds),
+      stages: [
+        { name: "Offer accepted", at: r.created_at },
+        { name: "Escrow funded", at: r.funded_at },
+        { name: "Shipped", at: r.shipped_at },
+        { name: "Delivery confirmed", at: r.delivered_at },
+        { name: "Escrow released", at: r.settled_at },
+      ],
+      buyer: { id: r.buyer_id as string, handle: r.buyer_handle as string, mark: r.buyer_mark as string },
+      seller: { id: r.seller_id as string, handle: r.seller_handle as string, mark: r.seller_mark as string },
+    }));
+  });
+}
