@@ -12,10 +12,13 @@
     "abuse": "dotenv -e .env.local -- tsx scripts/abuse.ts",
     "simulate": "dotenv -e .env.local -- tsx scripts/simulate.ts",
     "bruno": "cd bruno && bru run --env production -r",
-    "bruno:local": "cd bruno && bru run --env local -r"
+    "bruno:local": "cd bruno && bru run --env local -r",
+    "verify:csp": "tsx scripts/verify-csp.ts",
+    "verify:sweep": "dotenv -e .env.local -- tsx scripts/verify-sweep.ts"
   },
   "dependencies": {
     "@vercel/functions": "^3.11.4",
+    "@vercel/schedules": "^0.0.3",
     "ai": "^7.0.182",
     "next": "16.4.6",
     "pg": "^8.23.1",

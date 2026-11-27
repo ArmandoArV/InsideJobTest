@@ -68,6 +68,20 @@ export async function securityReport() {
           where t.wash)::int as wash_ratings`);
     const rp = rep.rows[0];
 
+    // --- deadlines ---------------------------------------------------------
+    const deadlines = await c.query(`
+      select
+        (select count(*) from audit_event where action = 'trade.expire_funding')::int as funding_expired,
+        (select count(*) from audit_event where action = 'trade.auto_release')::int as auto_released,
+        (select count(*) from audit_event where action = 'trade.resolve_refund')::int as refunded,
+        (select count(*) from trade
+          where state = 'pending_funding' and funding_deadline <= now())::int as overdue_funding,
+        (select count(*) from trade
+          where state = 'shipped' and auto_release_at <= now())::int as overdue_release,
+        (select count(*) from offer
+          where status = 'open' and expires_at <= now())::int as overdue_offers`);
+    const d = deadlines.rows[0];
+
     // --- audit chain -------------------------------------------------------
     const chain = await c.query(`select * from verify_audit_chain()`);
     const ledger = await c.query(`select * from verify_ledger_integrity()`);
@@ -140,6 +154,19 @@ export async function securityReport() {
         ],
       },
       {
+        claim: "Deadlines fire, so nothing can be locked open.",
+        detail:
+          "Every deadline is swept on a schedule running as a private function with no public URL. Without it, a buyer could have an offer accepted and simply never fund it: the trade would sit pending forever and the listing would stay reserved. That was a real hole, and the counters below are what closed it.",
+        proofs: [
+          { label: "Unfunded trades released", value: fmt(d.funding_expired), ok: null },
+          { label: "Escrow auto-released to seller", value: fmt(d.auto_released), ok: null },
+          { label: "Disputes refunded by deadline", value: fmt(d.refunded), ok: null },
+          { label: "Past deadline, awaiting sweep",
+            value: fmt(Number(d.overdue_funding) + Number(d.overdue_release) + Number(d.overdue_offers)),
+            ok: Number(d.overdue_funding) + Number(d.overdue_release) + Number(d.overdue_offers) < 50 },
+        ],
+      },
+      {
         claim: "Reputation cannot be manufactured.",
         detail:
           "A rating requires a settled trade and a counterparty, one per side, immutable once written. Trades with the same owner on both sides are flagged and excluded from aggregates.",
@@ -174,11 +201,11 @@ export const THREATS = [
   ["T7",  "Forging or inflating reputation", "Settled-trade requirement, one rating per side, immutable, wash excluded", "yes"],
   ["T8",  "Impersonation through handle collision", "Handles are non-unique and non-authoritative; identity is the credential", "yes"],
   ["T9",  "SQL injection", "Parameterised-only data access layer", "yes"],
-  ["T10", "Stored cross-site scripting in the human view", "Plain text only, React escaping, strict headers, no markdown", "yes"],
-  ["T11", "Resource exhaustion and cost attacks", "Per-principal token buckets, bounded negotiation depth, no model call on an unauthenticated path", "yes"],
+  ["T10", "Stored cross-site scripting in the human view", "Plain text only, React escaping, and a CSP with no unsafe-inline for scripts or styles, verified per deploy", "yes"],
+  ["T11", "Resource exhaustion and cost attacks", "Per-principal token buckets, an address-keyed and global ceiling on registration, bounded negotiation depth, no model call on an unauthenticated path", "yes"],
   ["T12", "Mass scraping", "Public projection only, pagination caps, rate limits", "partial"],
   ["T13", "Poisoning the search index or governance corpus", "Corpus is build-time and read-only; listing text never trains anything", "n/a"],
   ["T14", "Confabulated condition claims", "Condition is a constrained enum, never model-generated prose", "yes"],
-  ["T15", "Dispute abuse leaving funds hanging", "Auto-release deadline after shipping plus a bounded dispute window", "partial"],
+  ["T15", "Dispute abuse leaving funds hanging", "Auto-release deadline after shipping and a bounded dispute window, both swept on a schedule and covered by a regression test", "yes"],
   ["T16", "Timing and error-shape oracles", "Uniform error envelope, constant-time comparison, 404 for invisible objects", "yes"],
 ] as const;

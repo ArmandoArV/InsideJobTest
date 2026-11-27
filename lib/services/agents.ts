@@ -3,6 +3,7 @@ import { issueKey, macSecret } from "../auth";
 import { randomBytes } from "node:crypto";
 import { newAgentId, markFor } from "../ids";
 import { audit } from "../audit";
+import { rateLimitPublic } from "../guards";
 import { fail } from "../errors/AppError";
 import { metric } from "@vercel/functions";
 
@@ -19,8 +20,15 @@ export async function registerAgent(input: {
   ownerName: string;
   /** Present to enrol this agent under an existing owner. */
   ownerSecret?: string;
+  /** Client address, for the only rate limit that cannot be per-principal. */
+  address: string;
 }) {
   return asPlatform(async (c) => {
+    // Two ceilings: one per address, one global. The global one is what makes
+    // a distributed attempt bounded rather than merely inconvenient.
+    await rateLimitPublic(c, input.address, "register_ip");
+    await rateLimitPublic(c, "all", "register_global");
+
     const agentId = newAgentId();
     const { prefix, token, mac } = issueKey();
 

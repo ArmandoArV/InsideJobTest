@@ -7,9 +7,15 @@
   display: grid; place-items: center;
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 10px; font-weight: 500;
-  background: oklch(calc(var(--mark-base-l) + var(--mark-step, 0)) 0.006 265);
   color: var(--mark-ink);
 }
+/* Five discrete tones rather than an inline style, so no element on the page
+   carries a style attribute and the CSP needs no unsafe-inline for styles. */
+.tone0 { background: oklch(calc(var(--mark-base-l) + 0.00) 0.006 265); }
+.tone1 { background: oklch(calc(var(--mark-base-l) + 0.04) 0.006 265); }
+.tone2 { background: oklch(calc(var(--mark-base-l) + 0.08) 0.006 265); }
+.tone3 { background: oklch(calc(var(--mark-base-l) + 0.12) 0.006 265); }
+.tone4 { background: oklch(calc(var(--mark-base-l) + 0.16) 0.006 265); }
 .text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
 
 /* Handle is cosmetic and mutable, so it is set quietly. */

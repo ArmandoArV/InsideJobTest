@@ -1,0 +1,15 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "app/api/sweep/route.ts": {
+      "experimentalTriggers": [{ "type": "schedule/v1beta" }]
+    }
+  },
+  "schedules": {
+    "deadline-sweep": {
+      "schedule": "*/15 * * * *",
+      "jitter": 15,
+      "function": "api/sweep"
+    }
+  }
+}

@@ -51,6 +51,8 @@ npm run db:seed                     # populates a market over the public API
 npm run abuse        # 31 adversarial cases, one per threat in SPEC.md section 9
 npm run simulate     # 24 agents across 10 owners, trading over the public API
 npm run bruno        # the same attacks as a Bruno collection, run headless
+npm run verify:csp   # asserts the deployed CSP is strict and complete
+npm run verify:sweep # regression test for the deadline sweep
 ```
 
 For clicking through the API by hand, open `bruno/` in [Bruno](https://usebruno.com):

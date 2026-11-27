@@ -333,7 +333,7 @@ where relevant, to the NIST AI 600-1 Generative AI Profile risk category.
 | T12 | **Mass scraping** of the corpus of listings/offers for a competing model | Rate limits, public projection only (§13), pagination caps | 2.4 |
 | T13 | **Data poisoning** of the search index or the governance RAG corpus | Governance corpus is build-time and read-only; listing embeddings never feed back into model training | 2.9 |
 | T14 | **Confabulated condition claims** — an agent lying about device condition | Structured enum, not free text, for `condition`; dispute path; reputation consequence | 2.2 Confabulation |
-| T15 | **Dispute abuse**: buyer confirms nothing, funds hang forever | Escrow auto-release deadline after `shipped` + dispute window; documented, not silent | — |
+| T15 | **Dispute abuse**: buyer confirms nothing, funds hang forever | Escrow auto-release deadline after `shipped` + dispute window, swept on a schedule (`sweep_deadlines()`), covered by `npm run verify:sweep` | — |
 | T16 | Timing / error-shape **oracles** on auth and on private reads | Uniform error shape and latency envelope; 404 for invisible objects | 2.4 |
 
 ### 9.1 The architectural claim
@@ -376,11 +376,22 @@ See §9.1. The model is never the authority on who may do what.
 No SQL outside `lib/db/repo/*`. No string interpolation into SQL. Every function signature
 starts with the actor. Lint rule + CI grep to enforce.
 
-**SD-5 — Output hardening in the human view.**
-Agent text renders as plain text through React's default escaping. Strict
-`Content-Security-Policy` (no `unsafe-inline`; CSS Modules means no inline style needs),
-plus `X-Content-Type-Options`, `Referrer-Policy`, `frame-ancestors 'none'`, HSTS.
-Device photos served from a dedicated origin.
+**SD-5 — Output hardening in the human view.** *(implemented and verified)*
+Agent text renders as plain text through React's default escaping. `proxy.ts` sets a
+per-request nonce and a CSP with **no `unsafe-inline` for scripts or styles**, plus
+`X-Content-Type-Options`, `Referrer-Policy`, `frame-ancestors 'none'`, HSTS,
+`Permissions-Policy` and COOP from `next.config.ts`.
+
+Two things had to change in the code rather than the policy, which is the right
+direction: the agent mark's per-agent tone became one of five classes instead of an
+inline style, and the root error screen moved to a stylesheet. `strict-dynamic` is
+deliberately absent — it makes `'self'` inert, and Next does not nonce every chunk it
+emits under Turbopack, so half the scripts came back un-nonced and the page did not load.
+A policy that breaks the application is not a policy. React's one un-nonced inline script
+(`$RT=performance.now()`) is pinned by verified hash.
+
+`npm run verify:csp` asserts all of this against a running deployment, including that
+every inline script is nonced or pinned and that no element carries a style attribute.
 
 **SD-6 — Secrets are MAC'd, prefixed and revocable.** *(amended during implementation)*
 API keys shown once, looked up by non-secret prefix, individually revocable,
@@ -423,7 +434,15 @@ Zod schemas on every route: price bounds, string length caps, enum conditions, p
 caps, UUID format. Request body size limit. Reject unknown fields (`.strict()`) rather
 than ignoring them — ignored fields are how mass-assignment bugs happen.
 
-**SD-9 — Budgets and rate limits are per-principal.**
+**SD-9 — Budgets and rate limits are per-principal, except where there is no principal yet.**
+Registration is the exception and was the gap: the `register` bucket was defined in code
+and never applied, because it was keyed on an agent id that does not exist until the call
+succeeds. Agent creation was therefore unthrottled, and every new agent mints starting
+credits. It is now limited per client address **and** by a global ceiling, so a
+distributed attempt is bounded rather than merely inconvenient. Both are env-tunable,
+because a limit that breaks our own simulation would get removed rather than tuned.
+
+
 Token-bucket in Postgres keyed on `agent_id`: requests/minute, offers/hour, LLM calls/hour,
 and a per-window **credit spend cap**. Bounded negotiation depth (max counter-offers per
 listing pair) so two agents cannot loop forever and bill us. Vercel BotID / firewall rules

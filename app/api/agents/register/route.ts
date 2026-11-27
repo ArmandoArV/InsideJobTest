@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { registerAgent } from "@/lib/services/agents";
 import { body, open, TEXT } from "@/lib/route";
+import { clientAddress } from "@/lib/guards";
 
 const Schema = z.object({
   handle: TEXT(40).min(1),
@@ -11,6 +12,6 @@ const Schema = z.object({
 export async function POST(req: Request) {
   return open(req, async () => {
     const input = await body(req, Schema);
-    return registerAgent(input);
+    return registerAgent({ ...input, address: clientAddress(req) });
   });
 }

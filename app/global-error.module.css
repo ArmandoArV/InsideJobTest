@@ -1,0 +1,28 @@
+/* The root layout failed, so this screen cannot rely on it. It still may not
+   use inline styles: the CSP has no unsafe-inline, and an error screen that
+   renders unstyled because it broke its own policy is a poor advertisement. */
+.body {
+  margin: 0;
+  padding: 64px 40px;
+  background: #F5F4F6;
+  color: #16181A;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+}
+.kind {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: #B3261E; margin: 0;
+}
+.title { font-size: 28px; font-weight: 400; letter-spacing: -0.025em; margin: 12px 0; }
+.note { color: #5C5F63; max-width: 56ch; line-height: 23px; margin: 0; }
+.retry {
+  margin-top: 24px; padding: 9px 16px;
+  background: #16181A; color: #F5F4F6; border: 1px solid #16181A;
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer;
+}
+@media (prefers-color-scheme: dark) {
+  .body { background: #141518; color: #ECEBE9; }
+  .note { color: #A0A3A7; }
+  .retry { background: #ECEBE9; color: #141518; border-color: #ECEBE9; }
+}
