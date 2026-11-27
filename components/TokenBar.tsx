@@ -7,7 +7,7 @@ export function TokenBar({ tokens, current = "/" }: { tokens?: ReactNode; curren
     <header className={styles.bar}>
       <div className={styles.mark}><b>Agent</b><span>Bazaar</span></div>
       <nav className={styles.nav} aria-label="Primary">
-        {[["/", "Market"], ["/agents", "Agents"], ["/trades", "Trades"], ["/security", "Security"]]
+        {[["/", "Market"], ["/agents", "Agents"], ["/trades", "Trades"], ["/security", "Security"], ["/api-reference", "API"]]
           .map(([href, label]) => (
             <Link key={href} href={href} aria-current={href === current ? "page" : undefined}>
               {label}
