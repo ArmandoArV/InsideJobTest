@@ -527,6 +527,14 @@ governance material means: *documented, reviewable, and provably unmodified*.
 
 ## 12. The AI layer
 
+> **Status: specified, not built.** This section is design intent that did not survive the
+> 48 hours. What ships is lexical `tsvector` search with `ts_rank`; there is no pgvector,
+> no hybrid retrieval, no image similarity, no IR evaluation harness and no governance
+> corpus. §12.4 (negotiation) is built, with a deterministic engine and the model path
+> wired behind a credential check. The rest of this section describes what was planned and
+> is recorded unbuilt rather than quietly deleted, because the reasoning still holds and
+> the omission is a scope decision, not an oversight.
+
 Three components. Each is derived from a specific course in `Maestria-IA`, and each has a
 defined evaluation, because — per Karpathy — anything we want to be right needs a signal.
 
